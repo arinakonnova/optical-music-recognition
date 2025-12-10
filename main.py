@@ -126,14 +126,14 @@ for contour in contours:
 cv2.imshow("Candidates", resize(staffless_color))
 
 # STEP 3: Template matching
-# importing template
+# importing templates
 
-template = cv2.imread("./ressource/quarter.png", cv2.IMREAD_GRAYSCALE)
-cv2.imshow("template", template)
-
-h, w = template.shape[:2]
-
-result = cv2.matchTemplate(staffless_img, template, cv2.TM_CCOEFF_NORMED)
+clef_template = cv2.imread("./ressource/clef.png", cv2.IMREAD_GRAYSCALE)
+half_template = cv2.imread("./ressource/half.png", cv2.IMREAD_GRAYSCALE)
+quarter_template = cv2.imread("./ressource/quarter.png", cv2.IMREAD_GRAYSCALE)
+sharp_template = cv2.imread("./ressource/sharp.png", cv2.IMREAD_GRAYSCALE)
+wholespace_template = cv2.imread("./ressource/whole-space.png", cv2.IMREAD_GRAYSCALE)
+#cv2.imshow("template", template)
 
 # Find locations above threshold
 # try threshold: 
@@ -142,38 +142,86 @@ result = cv2.matchTemplate(staffless_img, template, cv2.TM_CCOEFF_NORMED)
 # 0.55 for sharps
 # whole spaces = not really working
 
-t=0.45
 
-locations = np.where(result >= t)
+def findSymbol(img,template,threshold):
+    h, w = template.shape[:2]
+    result = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
+    locations = np.where(result >= threshold)
 
-# print number of matches
-# print(len(locations[0]))
+    
+    rectangles = []
 
-# making colored version of staffless_img so rectangles show up
+    # grouping nearby detections to avoid drawing a lot of overlapping rectangles
+    for pt in zip(*locations[::-1]):
+        rectangles.append([pt[0], pt[1], w, h])
+    # grouping overlapping rectangles  
+    rectangles, _ = cv2.groupRectangles(rectangles, groupThreshold=1, eps=0.5)
+    
+    return rectangles
+
+def draw_rect(rectangles, img, color):
+    for (x, y, w, h) in rectangles:
+        cv2.rectangle(img, (x, y), (x + w, y + h), color, 2)
+    for (x, y, w, h) in rectangles:
+        cv2.rectangle(staffless_color, (x, y), (x + w, y + h), color, 2)
+
+
+def delete_out_of_staff(rectangles, staves):
+    filtered = []
+    for p in rectangles:
+        found = False
+        for staff in staves:
+            ys = sorted(staff)
+            if ys[0] - 50 < p[1] < ys[-1] + 50:
+                found = True
+                break
+        if found:
+            filtered.append(p)
+        else:
+            print("oop")
+    return filtered
+
+        
+
+
+# making colored version of img so rectangles show up
 staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
+found_clefs= findSymbol(staffless_img,clef_template, 0.3)
+found_halfs= findSymbol(staffless_img,half_template, 0.45)
+found_quarters= findSymbol(staffless_img,quarter_template, 0.45)
+found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
+found_wholespace= findSymbol(staffless_img,wholespace_template, 0.45)
 
-# grouping nearby detections to avoid drawing a lot of overlapping rectangles
-rectangles = []
-for pt in zip(*locations[::-1]):
-    rectangles.append([pt[0], pt[1], w, h])
+# deleting everything that's not in the staves (ie text)
+found_clefs=delete_out_of_staff(found_clefs,staves)
+found_halfs=delete_out_of_staff(found_halfs,staves)
+found_quarters= delete_out_of_staff(found_quarters,staves)
+found_sharps= delete_out_of_staff(found_sharps,staves)
+found_wholespace=delete_out_of_staff(found_wholespace,staves)
 
-# grouping overlapping rectangles
-rectangles, _ = cv2.groupRectangles(rectangles, groupThreshold=1, eps=0.5)
+draw_rect(found_clefs,staffless_color,(0,0,0))
+draw_rect(found_halfs,staffless_color,(255,0,0))
+draw_rect(found_quarters,staffless_color,(0,0,255))
+draw_rect(found_sharps,staffless_color,(0,255,0))
+draw_rect(found_wholespace,staffless_color,(255,255,0))
+
+
+
+
+
+
+
 
 # drawing rectangles
-for (x, y, w, h) in rectangles:
-    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-for (x, y, w, h) in rectangles:
-    cv2.rectangle(staffless_color, (x, y), (x + w, y + h), (0, 0, 255), 2)
+
 
 # saving result
 
-cv2.imshow("Matchtemplate", resize(result))
-cv2.imshow("Quarter Notes (staffless)", resize(staffless_color))
+#cv2.imshow("Matchtemplate", resize(result))
+cv2.imshow("Everything (staffless)", resize(staffless_color))
+cv2.imwrite("symbols.png", staffless_color)
 
 # resizing
-img = resize(img)
-cv2.imshow(str(t), img)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
