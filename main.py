@@ -2,6 +2,15 @@ import sys
 import cv2
 import numpy as np
 
+class Note:
+    def __init__(self, pitch,duration,x,y,type):
+        self.type=type
+        self.pitch = pitch
+        self.duration = duration
+        self.x=x
+        self.y=y
+
+
 # importing sheet file
 img_file = sys.argv[1]
 img = cv2.imread(img_file)
@@ -182,14 +191,8 @@ def delete_out_of_staff(rectangles, staves):
 def delete_left(rectangles):
     filtered = []
     for p in rectangles:
-        found = False
-        for staff in staves:
-            ys = sorted(staff)
             if 75  < p[0]:
-                found = True
-                break
-        if found:
-            filtered.append(p)
+                filtered.append(p)
     return filtered
 
 # def delete_symbol_overlap(r1,r2):
@@ -210,7 +213,7 @@ found_wholespace= findSymbol(staffless_img,wholespace_template, 0.45)
 found_clefs=delete_out_of_staff(found_clefs,staves)
 found_halfs=delete_out_of_staff(found_halfs,staves)
 found_quarters= delete_out_of_staff(found_quarters,staves)
-found_quarters = delete_left(found_quarters)
+found_quarters = delete_left(found_quarters) #temporary solution
 found_sharps= delete_out_of_staff(found_sharps,staves)
 found_wholespace=delete_out_of_staff(found_wholespace,staves)
 
@@ -221,8 +224,39 @@ draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_sharps,staffless_color,(0,255,0))
 draw_rect(found_wholespace,staffless_color,(255,255,0))
 
+# We create a note object, and then we find on which staff it is
+def sort_in_staff(staff_notes, staves, found, duration, type):
+    for p in found:
+        note = Note (0, duration, p[0], p[1],type)
+        for i in range (len(staves)):
+            ys = sorted(staves[i])
+            if ys[0] - 50 < p[1] < ys[-1] + 50:
+                staff_notes[i].append(note)
+                break
+    return staff_notes
+
+#We create an object where all our notes we be organized by staves
+staff_notes = np.array([0,0,0,0], dtype=object)
+for i in range(len(staff_notes)):
+    staff_notes[i] = []
+
+#We call sort_in_staff for every type of note, giving them a duration and a type name (for readability)
+staff_notes=sort_in_staff(staff_notes,staves,found_quarters,0.25,"quarter")
+staff_notes=sort_in_staff(staff_notes,staves,found_halfs,0.5,"half")
+staff_notes=sort_in_staff(staff_notes,staves,found_clefs,0,"clef")
+staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps")
+
+#finally, we sort them from left to right in the array so they're in order
+for staff in staff_notes:
+    staff.sort(key=lambda note: note.x)
 
 
+#Print them to double check everything is aok
+for i in range(len(staff_notes)):
+    print("Staff n°" + str(i+1) + ":")
+    for j in range(len(staff_notes[i])):
+        print(staff_notes[i][j].type)
+    print("\n")
 
 
 
