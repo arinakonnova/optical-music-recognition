@@ -7,6 +7,13 @@ img_file = sys.argv[1]
 img = cv2.imread(img_file)
 #cv2.imshow("aaa", img)
 
+# resizing function (to be used for displaying images only)
+def resize(img): 
+    h, w = img.shape[:2]
+    scale = 600 / h
+    img = cv2.resize(img, (int(w * scale), int(h * scale)))
+    return img 
+
 # edge detection 
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 edges = cv2.Canny(gray, 50, 150)
@@ -50,11 +57,11 @@ if len(current) == 5:
 for staff in staves: 
     ys = sorted(staff)
     top = ys[0] - 10 # padding above the first line
-    bottom = ys[-1] + 10
+    bottom = ys[-1] + 10 # padding below the last line
     # staff spans the full width of the image 
     x1 = 0
     x2 = img.shape[1]
-    # draw the actual box 
+    # drawing the actual box 
     cv2.rectangle(img, (x1, top), (x2, bottom), (0, 0, 255), 2)
 # saving the image with the staves highlighted 
 cv2.imwrite("staves_detected.png", img)
@@ -66,10 +73,10 @@ for x1, y1, x2, y2 in staff_lines:
 kernel = np.ones((1,3), np.uint8) # applying erosion with a horizontal kernel 
 thin_mask = cv2.erode(staff_mask, kernel, iterations = 1)
 staffless = cv2.inpaint(gray, thin_mask, 2, cv2.INPAINT_TELEA)
-cv2.imshow("Staff Mask", staff_mask)
+cv2.imshow("Staff Mask", resize(staff_mask))
 cv2.imwrite("staffless.png", staffless)
 staffless_img = cv2.imread("staffless.png", cv2.IMREAD_GRAYSCALE)
-cv2.imshow("Staff Removed", staffless)
+cv2.imshow("Staff Removed", resize(staffless_img))
 # AT THIS POINT: staff lines are masked pretty well BUT some of the top and bottom edges
 # (of half notes in spaces especially) are getting clipped which isn't ideal 
 # What we could do is: do notehead detection first, make a notehead protection mask, 
@@ -93,39 +100,36 @@ result = cv2.matchTemplate(staffless_img, template, cv2.TM_CCOEFF_NORMED)
 # whole spaces = not really working
 
 t=0.45
-#t=0.65
 
 locations = np.where(result >= t)
 
 # print number of matches
-#print(len(locations[0]))
+# print(len(locations[0]))
 
-# Make colored version of staffless_img so rectangles show up
+# making colored version of staffless_img so rectangles show up
 staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
 
-# To avoid drawing many overlapping rectangles, group nearby detections
+# grouping nearby detections to avoid drawing a lot of overlapping rectangles
 rectangles = []
 for pt in zip(*locations[::-1]):
     rectangles.append([pt[0], pt[1], w, h])
 
-# Group overlapping rectangles
+# grouping overlapping rectangles
 rectangles, _ = cv2.groupRectangles(rectangles, groupThreshold=1, eps=0.5)
 
-# Draw rectangles
+# drawing rectangles
 for (x, y, w, h) in rectangles:
     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
 for (x, y, w, h) in rectangles:
     cv2.rectangle(staffless_color, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
-# Save result
+# saving result
 
-cv2.imshow("Matchtemplate", result)
-cv2.imshow("Quarter Notes (staffless)", staffless_color)
+cv2.imshow("Matchtemplate", resize(result))
+cv2.imshow("Quarter Notes (staffless)", resize(staffless_color))
 
-#resize
-h, w = img.shape[:2]
-scale = 800 / w   # target width = 1000px
-img = cv2.resize(img, (int(w * scale), int(h * scale)))
+# resizing
+img = resize(img)
 cv2.imshow(str(t), img)
 
 cv2.waitKey(0)
