@@ -177,11 +177,25 @@ def delete_out_of_staff(rectangles, staves):
                 break
         if found:
             filtered.append(p)
-        else:
-            print("oop")
     return filtered
 
-        
+def delete_left(rectangles):
+    filtered = []
+    for p in rectangles:
+        found = False
+        for staff in staves:
+            ys = sorted(staff)
+            if 75  < p[0]:
+                found = True
+                break
+        if found:
+            filtered.append(p)
+    return filtered
+
+# def delete_symbol_overlap(r1,r2):
+#     for p1 in r1:
+#         for p2 in r2:
+#             if p2[0]
 
 
 # making colored version of img so rectangles show up
@@ -196,11 +210,13 @@ found_wholespace= findSymbol(staffless_img,wholespace_template, 0.45)
 found_clefs=delete_out_of_staff(found_clefs,staves)
 found_halfs=delete_out_of_staff(found_halfs,staves)
 found_quarters= delete_out_of_staff(found_quarters,staves)
+found_quarters = delete_left(found_quarters)
 found_sharps= delete_out_of_staff(found_sharps,staves)
 found_wholespace=delete_out_of_staff(found_wholespace,staves)
 
 draw_rect(found_clefs,staffless_color,(0,0,0))
 draw_rect(found_halfs,staffless_color,(255,0,0))
+draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_sharps,staffless_color,(0,255,0))
 draw_rect(found_wholespace,staffless_color,(255,255,0))
