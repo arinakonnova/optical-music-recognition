@@ -171,10 +171,23 @@ cv2.imshow("Candidates", resize(staffless_color))
 # importing templates
 
 clef_template = cv2.imread("./ressource/clef.png", cv2.IMREAD_GRAYSCALE)
-half_template = cv2.imread("./ressource/half.png", cv2.IMREAD_GRAYSCALE)
-quarter_template = cv2.imread("./ressource/quarter.png", cv2.IMREAD_GRAYSCALE)
-sharp_template = cv2.imread("./ressource/sharp.png", cv2.IMREAD_GRAYSCALE)
+#treble_clef_template = cv2.imread("./ressource/treble-clef.png", cv2.IMREAD_GRAYSCALE)
+#bass_clef_template = cv2.imread("./ressource/bass-clef.png", cv2.IMREAD_GRAYSCALE)
 wholespace_template = cv2.imread("./ressource/whole-space.png", cv2.IMREAD_GRAYSCALE)
+#whole_template = cv2.imread("./ressource/whole-note.png", cv2.IMREAD_GRAYSCALE)
+half_template = cv2.imread("./ressource/half.png", cv2.IMREAD_GRAYSCALE)
+#half_template = cv2.imread("./ressource/half-note-space.png", cv2.IMREAD_GRAYSCALE)
+quarter_template = cv2.imread("./ressource/quarter.png", cv2.IMREAD_GRAYSCALE)
+#quarter_template = cv2.imread("./ressource/quarter-note-line.png", cv2.IMREAD_GRAYSCALE)
+#eighth_up_template = cv2.imread("./ressource/eighth-note-line.png", cv2.IMREAD_GRAYSCALE)
+#eighth_down_template = cv2.imread("./ressource/eighth-note-space.png", cv2.IMREAD_GRAYSCALE)
+sharp_template = cv2.imread("./ressource/sharp.png", cv2.IMREAD_GRAYSCALE)
+#sharp_template = cv2.imread("./ressource/sharp-space.png", cv2.IMREAD_GRAYSCALE)
+#flat_template = cv2.imread("./ressource/flat-space.png", cv2.IMREAD_GRAYSCALE)
+#whole_rest_template = cv2.imread("./ressource/whole-rest.png", cv2.IMREAD_GRAYSCALE)
+#half_rest_template = cv2.imread("./ressource/half-rest.png", cv2.IMREAD_GRAYSCALE)
+#quarter_rest_template = cv2.imread("./ressource/quarter-rest.png", cv2.IMREAD_GRAYSCALE)
+#eighth_rest_template = cv2.imread("./ressource/eighth-rest.png", cv2.IMREAD_GRAYSCALE)
 #cv2.imshow("template", template)
 
 # Find locations above threshold
@@ -232,7 +245,7 @@ def delete_left(rectangles):
 
 # making colored version of img so rectangles show up
 staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
-found_clefs= findSymbol(staffless_img,clef_template, 0.3)
+found_clefs= findSymbol(staffless_img,clef_template, 0.3) # should we do the same for the bass clef?
 found_halfs= findSymbol(staffless_img,half_template, 0.45)
 found_quarters= findSymbol(staffless_img,quarter_template, 0.45)
 found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
