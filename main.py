@@ -215,6 +215,30 @@ def findSymbol(img,template,threshold):
     
     return rectangles
 
+def remove_inner_boxes(a1, a2):
+    keep = []
+
+    for (x2, y2, w2, h2) in a2:
+        x2b = x2 + w2
+        y2b = y2 + h2
+
+        inside_any = False
+        for (x1, y1, w1, h1) in a1:
+            x1b = x1 + w1 + 10
+            y1b = y1 + h1 + 10
+
+            # check if a2 box is fully inside a1 box
+            if (x2 >= x1-10 and y2 >= y1-10 and
+                x2b <= x1b and y2b <= y1b):
+                inside_any = True
+                break
+
+        if not inside_any:
+            keep.append([x2, y2, w2, h2])
+
+    return np.array(keep)
+
+
 def draw_rect(rectangles, img, color):
     for (x, y, w, h) in rectangles:
         cv2.rectangle(img, (x, y), (x + w, y + h), color, 2)
@@ -252,21 +276,25 @@ found_clefs= findSymbol(staffless_img,treble_clef_template, 0.3) # should we do 
 found_halfs= findSymbol(staffless_img,half_template, 0.45)
 found_quarters= findSymbol(staffless_img,quarter_template, 0.45)
 found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
-found_whole= findSymbol(staffless_img,whole_template, 0.45)
-found_dots= findSymbol(staffless_img,dot_template, 0.45)
+found_wholes= findSymbol(staffless_img,whole_template, 0.45)
+found_dots= findSymbol(staffless_img,dot_template, 0.50)
 
 # deleting everything that's not in the staves (ie text)
 found_clefs=delete_out_of_staff(found_clefs,staves)
 found_halfs=delete_out_of_staff(found_halfs,staves)
 found_quarters= delete_out_of_staff(found_quarters,staves)
 found_sharps= delete_out_of_staff(found_sharps,staves)
-found_whole=delete_out_of_staff(found_whole,staves)
+found_wholes=delete_out_of_staff(found_wholes,staves)
 found_dots= delete_out_of_staff(found_dots,staves)
 
 found_quarters = delete_left(found_quarters) #temporary solution
 found_halfs = delete_left(found_halfs)
-found_whole= delete_left(found_whole)
+found_wholes= delete_left(found_wholes)
 found_dots=delete_left(found_dots)
+
+found_dots=remove_inner_boxes(found_halfs,found_dots)
+found_dots=remove_inner_boxes(found_quarters,found_dots)
+found_dots=remove_inner_boxes(found_wholes,found_dots)
 
 
 
@@ -275,8 +303,8 @@ draw_rect(found_halfs,staffless_color,(255,0,0))
 draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_sharps,staffless_color,(0,255,0))
-draw_rect(found_whole,staffless_color,(255,255,0))
-draw_rect(found_dots,staffless_color,(0,255,255))
+draw_rect(found_wholes,staffless_color,(255,255,0))
+draw_rect(found_dots,staffless_color,(0,125,255))
 
 # We create a note object, and then we find on which staff it is
 def sort_in_staff(staff_notes, staves, found, duration, type):
@@ -298,9 +326,14 @@ for i in range(len(staff_notes)):
     staff_notes[i] = []
 
 #We call sort_in_staff for every type of note, giving them a duration and a type name (for readability)
+staff_notes=sort_in_staff(staff_notes,staves,found_clefs,0,"clef")
+staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps")
+
 staff_notes=sort_in_staff(staff_notes,staves,found_quarters,0.25,"quarter")
 staff_notes=sort_in_staff(staff_notes,staves,found_halfs,0.5,"half")
-staff_notes=sort_in_staff(staff_notes,staves,found_clefs,0,"clef")
+staff_notes=sort_in_staff(staff_notes,staves,found_wholes,0,"whole")
+staff_notes=sort_in_staff(staff_notes,staves,found_dots,0,"dot")
+
 #staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps") 
 # i commented sharps out just bc they're not "notes" per se but idk what you want to do with those
 
