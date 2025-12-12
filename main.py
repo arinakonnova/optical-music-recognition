@@ -327,7 +327,7 @@ for i in range(len(staff_notes)):
 
 #We call sort_in_staff for every type of note, giving them a duration and a type name (for readability)
 staff_notes=sort_in_staff(staff_notes,staves,found_clefs,0,"clef")
-staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps")
+staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharp")
 
 staff_notes=sort_in_staff(staff_notes,staves,found_quarters,0.25,"quarter")
 staff_notes=sort_in_staff(staff_notes,staves,found_halfs,0.5,"half")
@@ -341,16 +341,27 @@ staff_notes=sort_in_staff(staff_notes,staves,found_dots,0,"dot")
 # treble clef: space above top line -> space below bottom line
 pitch_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4"]
 pitch_vals = [ 79 , 77 , 76 , 74 , 72 , 71 , 69 , 67 , 65 , 64 , 62 ]
-note_start= False
 
+note_start= False
 for si, staff in enumerate(staff_notes):
     positions = staff_info[si]["pitch_positions"]
     for note in staff:
-        cy = note.y 
-        # find nearest staff line/space position
-        diffs = [abs(cy - pos) for pos in positions]
-        idx = diffs.index(min(diffs))
-        note.pitch = pitch_vals[idx]
+        if note.type!="clef":
+            cy = note.y 
+            # find nearest staff line/space position
+            diffs = [abs(cy - pos) for pos in positions]
+            idx = diffs.index(min(diffs))
+            if not note_start:
+                match note.type:
+                    case "sharp":
+                        pitch_vals[idx]+=1
+                    case "flat":
+                        pitch_vals[idx]-=1
+                    case _:
+                        note_start = True
+                        note.pitch = pitch_vals[idx]                
+            else:
+                note.pitch = pitch_vals[idx]
 
 #finally, we sort them from left to right in the array so they're in order
 for staff in staff_notes:
