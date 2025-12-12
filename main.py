@@ -17,11 +17,12 @@ img = cv2.imread(img_file)
 #cv2.imshow("aaa", img)
 
 # resizing function (to be used for displaying images only)
-def resize(img): 
+def resize(img, scale): 
     h, w = img.shape[:2]
-    scale = 600 / h
-    img = cv2.resize(img, (int(w * scale), int(h * scale)))
+    coeff = scale / h
+    img = cv2.resize(img, (int(w * coeff), int(h * coeff)))
     return img 
+
 
 # STEP 1: Finding all the staff lines through edge detection 
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -129,7 +130,7 @@ staffless = cv2.inpaint(gray, thin_mask, 2, cv2.INPAINT_TELEA)
 #cv2.imshow("Staff Mask", resize(staff_mask))
 cv2.imwrite("staffless.png", staffless)
 staffless_img = cv2.imread("staffless.png", cv2.IMREAD_GRAYSCALE)
-cv2.imshow("Staff Removed", resize(staffless_img))
+cv2.imshow("Staff Removed", resize(staffless_img,600))
 
 # STEP 2: Finding potential musical symbols 
 binary = cv2.adaptiveThreshold(staffless_img, 255, 
@@ -137,7 +138,7 @@ binary = cv2.adaptiveThreshold(staffless_img, 255,
                                cv2.THRESH_BINARY_INV, 
                                35, # block size
                                11) # constant subtracted from mean
-cv2.imshow("Binary", resize(binary))
+#cv2.imshow("Binary", resize(binary),600)
 cv2.imwrite("binary.png", binary)
 
 contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -166,29 +167,30 @@ for contour in contours:
     cx, cy = x + w//2, y+ h//2 
     symbols.append({"bbox": (x,y,w,h), "center": (cx,cy), "image": crop})
     cv2.rectangle(staffless_color, (x,y), (x+w, y+h), (0,0,255), 2)
-cv2.imshow("Candidates", resize(staffless_color))
+#cv2.imshow("Candidates", resize(staffless_color),600)
 
 # STEP 3: Template matching
 # importing templates
 
-clef_template = cv2.imread("./ressource/clef.png", cv2.IMREAD_GRAYSCALE)
-#treble_clef_template = cv2.imread("./ressource/treble-clef.png", cv2.IMREAD_GRAYSCALE)
-#bass_clef_template = cv2.imread("./ressource/bass-clef.png", cv2.IMREAD_GRAYSCALE)
-wholespace_template = cv2.imread("./ressource/whole-space.png", cv2.IMREAD_GRAYSCALE)
-#whole_template = cv2.imread("./ressource/whole-note.png", cv2.IMREAD_GRAYSCALE)
-half_template = cv2.imread("./ressource/half.png", cv2.IMREAD_GRAYSCALE)
-#half_template = cv2.imread("./ressource/half-note-space.png", cv2.IMREAD_GRAYSCALE)
-quarter_template = cv2.imread("./ressource/quarter.png", cv2.IMREAD_GRAYSCALE)
-#quarter_template = cv2.imread("./ressource/quarter-note-line.png", cv2.IMREAD_GRAYSCALE)
+#clef_template = cv2.imread("./ressource/clef.png", cv2.IMREAD_GRAYSCALE)
+treble_clef_template = resize(cv2.imread("./ressource/treble-clef.png", cv2.IMREAD_GRAYSCALE),100)
+bass_clef_template = resize(cv2.imread("./ressource/bass-clef.png", cv2.IMREAD_GRAYSCALE),100)
+#wholespace_template = cv2.imread("./ressource/whole-space.png", cv2.IMREAD_GRAYSCALE)
+whole_template = resize(cv2.imread("./ressource/whole-note.png", cv2.IMREAD_GRAYSCALE),15)
+# half_template = cv2.imread("./ressource/half.png", cv2.IMREAD_GRAYSCALE)
+half_template = resize(cv2.imread("./ressource/half-note-space.png", cv2.IMREAD_GRAYSCALE),15)
+#quarter_template = cv2.imread("./ressource/quarter.png", cv2.IMREAD_GRAYSCALE)
+quarter_template = resize(cv2.imread("./ressource/quarter-note-line.png", cv2.IMREAD_GRAYSCALE),15)
 #eighth_up_template = cv2.imread("./ressource/eighth-note-line.png", cv2.IMREAD_GRAYSCALE)
 #eighth_down_template = cv2.imread("./ressource/eighth-note-space.png", cv2.IMREAD_GRAYSCALE)
-sharp_template = cv2.imread("./ressource/sharp.png", cv2.IMREAD_GRAYSCALE)
-#sharp_template = cv2.imread("./ressource/sharp-space.png", cv2.IMREAD_GRAYSCALE)
+#sharp_template = cv2.imread("./ressource/sharp.png", cv2.IMREAD_GRAYSCALE)
+sharp_template = resize(cv2.imread("./ressource/sharp-space.png", cv2.IMREAD_GRAYSCALE),50)
 #flat_template = cv2.imread("./ressource/flat-space.png", cv2.IMREAD_GRAYSCALE)
 #whole_rest_template = cv2.imread("./ressource/whole-rest.png", cv2.IMREAD_GRAYSCALE)
 #half_rest_template = cv2.imread("./ressource/half-rest.png", cv2.IMREAD_GRAYSCALE)
 #quarter_rest_template = cv2.imread("./ressource/quarter-rest.png", cv2.IMREAD_GRAYSCALE)
 #eighth_rest_template = cv2.imread("./ressource/eighth-rest.png", cv2.IMREAD_GRAYSCALE)
+dot_template = resize(cv2.imread("./ressource/dot.png", cv2.IMREAD_GRAYSCALE),20)
 #cv2.imshow("template", template)
 
 # Find locations above threshold
@@ -235,7 +237,7 @@ def delete_out_of_staff(rectangles, staves):
 def delete_left(rectangles):
     filtered = []
     for p in rectangles:
-            if 75  < p[0]:
+            if 150  < p[0]:
                 filtered.append(p)
     return filtered
 
@@ -246,26 +248,35 @@ def delete_left(rectangles):
 
 # making colored version of img so rectangles show up
 staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
-found_clefs= findSymbol(staffless_img,clef_template, 0.3) # should we do the same for the bass clef?
+found_clefs= findSymbol(staffless_img,treble_clef_template, 0.3) # should we do the same for the bass clef?
 found_halfs= findSymbol(staffless_img,half_template, 0.45)
 found_quarters= findSymbol(staffless_img,quarter_template, 0.45)
 found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
-found_wholespace= findSymbol(staffless_img,wholespace_template, 0.45)
+found_whole= findSymbol(staffless_img,whole_template, 0.45)
+found_dots= findSymbol(staffless_img,dot_template, 0.45)
 
 # deleting everything that's not in the staves (ie text)
 found_clefs=delete_out_of_staff(found_clefs,staves)
 found_halfs=delete_out_of_staff(found_halfs,staves)
 found_quarters= delete_out_of_staff(found_quarters,staves)
-found_quarters = delete_left(found_quarters) #temporary solution
 found_sharps= delete_out_of_staff(found_sharps,staves)
-found_wholespace=delete_out_of_staff(found_wholespace,staves)
+found_whole=delete_out_of_staff(found_whole,staves)
+found_dots= delete_out_of_staff(found_dots,staves)
+
+found_quarters = delete_left(found_quarters) #temporary solution
+found_halfs = delete_left(found_halfs)
+found_whole= delete_left(found_whole)
+found_dots=delete_left(found_dots)
+
+
 
 draw_rect(found_clefs,staffless_color,(0,0,0))
 draw_rect(found_halfs,staffless_color,(255,0,0))
 draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_sharps,staffless_color,(0,255,0))
-draw_rect(found_wholespace,staffless_color,(255,255,0))
+draw_rect(found_whole,staffless_color,(255,255,0))
+draw_rect(found_dots,staffless_color,(0,255,255))
 
 # We create a note object, and then we find on which staff it is
 def sort_in_staff(staff_notes, staves, found, duration, type):
@@ -344,7 +355,7 @@ with open("output.mid", "wb") as output_file:
     MyMIDI.writeFile(output_file)
 
 #cv2.imshow("Matchtemplate", resize(result))
-cv2.imshow("Everything (staffless)", resize(staffless_color))
+cv2.imshow("Everything (staffless)", resize(staffless_color,600))
 cv2.imwrite("symbols.png", staffless_color)
 
 # resizing
