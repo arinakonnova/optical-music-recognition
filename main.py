@@ -3,13 +3,12 @@ import cv2
 import numpy as np
 
 class Note:
-    def __init__(self, pitch,duration,x,y,type):
+    def __init__(self,pitch,duration,x,y,type):
         self.type=type
         self.pitch = pitch
         self.duration = duration
         self.x=x
         self.y=y
-
 
 # importing sheet file
 img_file = sys.argv[1]
@@ -47,6 +46,7 @@ if lines is not None:
         if abs(y1 - y2) < 3: # small tolerance for tilt
             staff_lines.append((x1, y1, x2, y2))
             cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+staff_y_positions = sorted([y1 for (x1, y1, x2, y2) in staff_lines]) # will help in finding pitch
 
 # getting rid of potential line duplicates & merging lines within 4px
 unique_ys = []
@@ -68,16 +68,53 @@ for y in ys[1:]:
 if len(current) == 5:
     staves.append(current)
 
-# drawing bounding boxes around each stave
-for staff in staves: 
-    ys = sorted(staff)
-    top = ys[0] - 10 # padding above the first line
-    bottom = ys[-1] + 10 # padding below the last line
-    # staff spans the full width of the image 
+staff_info = []
+
+# getting staff geometry & drawing bounding boxes around each stave
+for staff_index, staff in enumerate(staves):
+    staff = sorted(staff) # 5 y-values
+    line_positions = staff[:] # exact y-values of the 5 lines
+    spacing = np.mean([staff[i+1]-staff[i] for i in range(4)])
+    space_positions = []
+    for i in range(4):
+        middle = (staff[i] + staff[i+1]) / 2
+        space_positions.append(middle)
+    extra_top_space = staff[0] - spacing
+    extra_btm_space = staff[-1] + spacing
+    # bounding box 
+    top = staff[0] - 10
+    bottom = staff[-1] + 10
     x1 = 0
     x2 = img.shape[1]
-    # drawing the actual box 
     cv2.rectangle(img, (x1, top), (x2, bottom), (0, 0, 255), 2)
+    # putting all the pitch positions into one thing 
+    pitch_positions = [extra_top_space, staff[0], space_positions[0], staff[1],
+                       space_positions[1], staff[2], space_positions[2], staff[3], 
+                       space_positions[3], staff[4], extra_btm_space]
+    # storing all the geometry 
+    staff_info.append({
+        "lines": line_positions, # 5 line y-values
+        "spaces": space_positions, # 4 space midpoints
+        "spacing": spacing, # average staff spacing
+        "top": top,
+        "bottom": bottom,
+        "extended_spaces": [
+            extra_top_space,
+            *space_positions,
+            extra_btm_space
+        ],
+        "pitch_positions": pitch_positions
+    })
+#for staff in staves: 
+#    ys = sorted(staff)
+#    top = ys[0] - 10 # padding above the first line
+#    bottom = ys[-1] + 10 # padding below the last line
+#    # staff spans the full width of the image 
+#    x1 = 0
+#    x2 = img.shape[1]
+#    # drawing the actual box 
+#    cv2.rectangle(img, (x1, top), (x2, bottom), (0, 0, 255), 2)
+
 # saving the image with the staves highlighted 
 cv2.imwrite("staves_detected.png", img)
 
@@ -92,10 +129,6 @@ staffless = cv2.inpaint(gray, thin_mask, 2, cv2.INPAINT_TELEA)
 cv2.imwrite("staffless.png", staffless)
 staffless_img = cv2.imread("staffless.png", cv2.IMREAD_GRAYSCALE)
 cv2.imshow("Staff Removed", resize(staffless_img))
-# AT THIS POINT: staff lines are masked pretty well BUT some of the top and bottom edges
-# (of half notes in spaces especially) are getting clipped which isn't ideal 
-# What we could do is: do notehead detection first, make a notehead protection mask, 
-# then remove staff line pixels only if they're not in notehead regions
 
 # STEP 2: Finding potential musical symbols 
 binary = cv2.adaptiveThreshold(staffless_img, 255, 
@@ -151,13 +184,11 @@ wholespace_template = cv2.imread("./ressource/whole-space.png", cv2.IMREAD_GRAYS
 # 0.55 for sharps
 # whole spaces = not really working
 
-
 def findSymbol(img,template,threshold):
     h, w = template.shape[:2]
     result = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
     locations = np.where(result >= threshold)
-
-    
+   
     rectangles = []
 
     # grouping nearby detections to avoid drawing a lot of overlapping rectangles
@@ -173,7 +204,6 @@ def draw_rect(rectangles, img, color):
         cv2.rectangle(img, (x, y), (x + w, y + h), color, 2)
     for (x, y, w, h) in rectangles:
         cv2.rectangle(staffless_color, (x, y), (x + w, y + h), color, 2)
-
 
 def delete_out_of_staff(rectangles, staves):
     filtered = []
@@ -199,7 +229,6 @@ def delete_left(rectangles):
 #     for p1 in r1:
 #         for p2 in r2:
 #             if p2[0]
-
 
 # making colored version of img so rectangles show up
 staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
@@ -227,10 +256,13 @@ draw_rect(found_wholespace,staffless_color,(255,255,0))
 # We create a note object, and then we find on which staff it is
 def sort_in_staff(staff_notes, staves, found, duration, type):
     for p in found:
-        note = Note (0, duration, p[0], p[1],type)
+        x,y,w,h = p
+        cx = x + w // 2 # getting the centerpoint of the notehead
+        cy = y + h // 2
+        note = Note (0, duration, cx, cy,type)
         for i in range (len(staves)):
             ys = sorted(staves[i])
-            if ys[0] - 50 < p[1] < ys[-1] + 50:
+            if ys[0] - 50 < cy < ys[-1] + 50:
                 staff_notes[i].append(note)
                 break
     return staff_notes
@@ -244,26 +276,36 @@ for i in range(len(staff_notes)):
 staff_notes=sort_in_staff(staff_notes,staves,found_quarters,0.25,"quarter")
 staff_notes=sort_in_staff(staff_notes,staves,found_halfs,0.5,"half")
 staff_notes=sort_in_staff(staff_notes,staves,found_clefs,0,"clef")
-staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps")
+#staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps") 
+# i commented sharps out just bc they're not "notes" per se but idk what you want to do with those
+
+# We loop through each staff and assign a pitch 
+# treble clef: space above top line -> space below bottom line
+pitch_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4"]
+for si, staff in enumerate(staff_notes):
+    positions = staff_info[si]["pitch_positions"]
+    for note in staff:
+        cy = note.y 
+        # find nearest staff line/space position
+        diffs = [abs(cy - pos) for pos in positions]
+        idx = diffs.index(min(diffs))
+        note.pitch = pitch_names[idx]
 
 #finally, we sort them from left to right in the array so they're in order
 for staff in staff_notes:
     staff.sort(key=lambda note: note.x)
 
-
 #Print them to double check everything is aok
 for i in range(len(staff_notes)):
     print("Staff n°" + str(i+1) + ":")
-    for j in range(len(staff_notes[i])):
-        print(staff_notes[i][j].type)
+    #for j in range(len(staff_notes[i])):
+    #    print(staff_notes[i][j].type)
+    for note in staff_notes[i]:
+        # printing note type, pitch, and coordinates (sanity check before converting to MIDI)
+        print(f"{note.type} -> {note.pitch} (x={note.x}, y={note.y})") 
     print("\n")
 
-
-
-
-
 # drawing rectangles
-
 
 # saving result
 
