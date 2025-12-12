@@ -331,7 +331,7 @@ staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps")
 
 staff_notes=sort_in_staff(staff_notes,staves,found_quarters,0.25,"quarter")
 staff_notes=sort_in_staff(staff_notes,staves,found_halfs,0.5,"half")
-staff_notes=sort_in_staff(staff_notes,staves,found_wholes,0,"whole")
+staff_notes=sort_in_staff(staff_notes,staves,found_wholes,1,"whole")
 staff_notes=sort_in_staff(staff_notes,staves,found_dots,0,"dot")
 
 #staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps") 
@@ -341,6 +341,8 @@ staff_notes=sort_in_staff(staff_notes,staves,found_dots,0,"dot")
 # treble clef: space above top line -> space below bottom line
 pitch_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4"]
 pitch_vals = [ 79 , 77 , 76 , 74 , 72 , 71 , 69 , 67 , 65 , 64 , 62 ]
+note_start= False
+
 for si, staff in enumerate(staff_notes):
     positions = staff_info[si]["pitch_positions"]
     for note in staff:
@@ -381,6 +383,8 @@ time=0
 for i in range (len(all_notes)):
     note=all_notes[i]
     if note.duration!=0:
+        if i!=len(all_notes) -1 and all_notes[i+1].type=="dot":
+            note.duration*=1.5
         MyMIDI.addNote(track=0, channel=0, pitch=note.pitch, time=time, duration=note.duration, volume=100)
         time=time+note.duration
 
