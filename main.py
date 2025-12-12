@@ -1,6 +1,7 @@
 import sys
 import cv2
 import numpy as np
+from midiutil import MIDIFile
 
 class Note:
     def __init__(self,pitch,duration,x,y,type):
@@ -295,6 +296,7 @@ staff_notes=sort_in_staff(staff_notes,staves,found_clefs,0,"clef")
 # We loop through each staff and assign a pitch 
 # treble clef: space above top line -> space below bottom line
 pitch_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4"]
+pitch_vals = [ 79 , 77 , 76 , 74 , 72 , 71 , 69 , 67 , 65 , 64 , 62 ]
 for si, staff in enumerate(staff_notes):
     positions = staff_info[si]["pitch_positions"]
     for note in staff:
@@ -302,7 +304,7 @@ for si, staff in enumerate(staff_notes):
         # find nearest staff line/space position
         diffs = [abs(cy - pos) for pos in positions]
         idx = diffs.index(min(diffs))
-        note.pitch = pitch_names[idx]
+        note.pitch = pitch_vals[idx]
 
 #finally, we sort them from left to right in the array so they're in order
 for staff in staff_notes:
@@ -318,9 +320,28 @@ for i in range(len(staff_notes)):
         print(f"{note.type} -> {note.pitch} (x={note.x}, y={note.y})") 
     print("\n")
 
-# drawing rectangles
 
-# saving result
+# fusing everything into a single array of """notes"""
+all_notes = []
+for i in staff_notes:
+    for j in i:
+        all_notes.append(j)
+
+
+MyMIDI = MIDIFile(1)  # One track, defaults to format 1 (tempo track is created
+                      # automatically)
+MyMIDI.addTempo(0, 0, tempo=60)
+
+time=0
+#for i,note in enumerate(all_notes):
+for i in range (len(all_notes)):
+    note=all_notes[i]
+    if note.duration!=0:
+        MyMIDI.addNote(track=0, channel=0, pitch=note.pitch, time=time, duration=note.duration, volume=100)
+        time=time+note.duration
+
+with open("output.mid", "wb") as output_file:
+    MyMIDI.writeFile(output_file)
 
 #cv2.imshow("Matchtemplate", resize(result))
 cv2.imshow("Everything (staffless)", resize(staffless_color))
