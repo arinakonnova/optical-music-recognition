@@ -355,8 +355,12 @@ for si, staff in enumerate(staff_notes):
                 match note.type:
                     case "sharp":
                         pitch_vals[idx]+=1
+                        if idx<4:
+                            pitch_vals[idx+7]+=1
                     case "flat":
                         pitch_vals[idx]-=1
+                        if idx<4:
+                            pitch_vals[idx+7]-=1
                     case _:
                         note_start = True
                         note.pitch = pitch_vals[idx]                
