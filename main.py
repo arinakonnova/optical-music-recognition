@@ -371,7 +371,7 @@ bass_vals = [59 , 57 , 55 , 53 , 52 , 50 , 48 , 47, 45 , 43, 42,40]
 
 note_start= False
 for si, staff in enumerate(staff_notes):
-    if staff[0].type=="bass_clef":
+    if len(staff)>0 and staff[0].type=="bass_clef":
         pitch_vals=bass_vals
     else:
         pitch_vals=treble_vals
