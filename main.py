@@ -425,7 +425,7 @@ for i in range(len(staff_notes)):
 treble_notes = []
 bass_notes = []
 for i in staff_notes:
-    if i[0].type=="treble_clef":
+    if len(i)>0 and i[0].type=="treble_clef":
         for j in i:
             treble_notes.append(j)
     else:
