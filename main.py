@@ -282,7 +282,7 @@ found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
 found_wholes= findSymbol(staffless_img,whole_template, 0.535)
 found_dots= findSymbol(staffless_img,dot_template, 0.70)
 found_eigths= findSymbol(staffless_img,eighth_up_template, 0.47)
-found_barred_eigths= findSymbol(staffless_img,barred_eighth_template, 0.2)
+#found_barred_eigths= findSymbol(staffless_img,barred_eighth_template, 0.2)
 
 
 # deleting everything that's not in the staves (ie text)
@@ -300,8 +300,8 @@ found_halfs = delete_left(found_halfs,found_treble_clefs[0][0]+found_treble_clef
 found_wholes= delete_left(found_wholes,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 found_dots=delete_left(found_dots,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 
-found_quarters=remove_inner_boxes(found_barred_eigths,found_quarters)
-found_quarters=remove_inner_boxes(found_eigths,found_quarters)
+#found_quarters=remove_inner_boxes(found_barred_eigths,found_quarters)
+#found_quarters=remove_inner_boxes(found_eigths,found_quarters)
 found_quarters=remove_inner_boxes(found_wholes,found_quarters)
 found_halfs=remove_inner_boxes(found_eigths,found_halfs)
 found_halfs=remove_inner_boxes(found_wholes,found_halfs)
@@ -320,7 +320,7 @@ draw_rect(found_sharps,staffless_color,(0,255,0))
 draw_rect(found_wholes,staffless_color,(255,255,0))
 draw_rect(found_dots,staffless_color,(0,125,255))
 draw_rect(found_eigths,staffless_color,(255,0,255))
-draw_rect(found_barred_eigths,staffless_color,(255,0,255))
+#draw_rect(found_barred_eigths,staffless_color,(255,0,255))
 
 # We create a note object, and then we find on which staff it is
 def sort_in_staff(staff_notes, staves, found, duration, type):
@@ -367,7 +367,7 @@ staff_notes=sort_in_staff(staff_notes,staves,found_eigths,0.125,"eigth")
 treble_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4","C4"]
 treble_vals = [ 79 , 77 , 76 , 74 , 72 , 71 , 69 , 67 , 65 , 64 , 62, 60 ]
 
-bass_vals = [59 , 57 , 55 , 53 , 52 , 50 , 48 , 47, 45 , 43]
+bass_vals = [59 , 57 , 55 , 53 , 52 , 50 , 48 , 47, 45 , 43, 42,40]
 
 note_start= False
 for si, staff in enumerate(staff_notes):
@@ -377,13 +377,12 @@ for si, staff in enumerate(staff_notes):
         pitch_vals=treble_vals
     positions = staff_info[si]["pitch_positions"]
     for note in staff:
-        if note.type!="clef":
+        if note.type!="treble_clef" and note.type!="bass_clef" :
             #print(positions[1]-positions[0])
             cy = note.y 
             # find nearest staff line/space position
             diffs = [abs(cy - pos) for pos in positions]
             idx = diffs.index(min(diffs))
-            print(positions[-1])
             if positions[-1]-7<cy:
                 idx+=1
             if not note_start:
