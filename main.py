@@ -187,7 +187,7 @@ half_template = resize(cv2.imread("./ressource/templates/half-note-space.png", c
 #quarter_template = cv2.imread("./ressource/templates/quarter.png", cv2.IMREAD_GRAYSCALE)
 quarter_template = resize(cv2.imread("./ressource/templates/quarter-note-line.png", cv2.IMREAD_GRAYSCALE),15)
 eighth_up_template =resize(cv2.imread("./ressource/templates/eighth-note-line.png", cv2.IMREAD_GRAYSCALE),75)
-barred_eighths =resize(cv2.imread("./ressource/templates/barred-eighths.png", cv2.IMREAD_GRAYSCALE),75)
+barred_eighth_template =resize(cv2.imread("./ressource/templates/barred-eighths.png", cv2.IMREAD_GRAYSCALE),75)
 #eighth_down_template =resize( cv2.imread("./ressource/templates/eighth-note-space.png", cv2.IMREAD_GRAYSCALE),50)
 #sharp_template = cv2.imread("./ressource/templates/sharp.png", cv2.IMREAD_GRAYSCALE)
 sharp_template = resize(cv2.imread("./ressource/templates/sharp-space.png", cv2.IMREAD_GRAYSCALE),50)
@@ -282,6 +282,8 @@ found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
 found_wholes= findSymbol(staffless_img,whole_template, 0.535)
 found_dots= findSymbol(staffless_img,dot_template, 0.70)
 found_eigths= findSymbol(staffless_img,eighth_up_template, 0.47)
+found_barred_eigths= findSymbol(staffless_img,barred_eighth_template, 0.2)
+
 
 # deleting everything that's not in the staves (ie text)
 found_treble_clefs=delete_out_of_staff(found_treble_clefs,staves)
@@ -298,6 +300,7 @@ found_halfs = delete_left(found_halfs,found_treble_clefs[0][0]+found_treble_clef
 found_wholes= delete_left(found_wholes,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 found_dots=delete_left(found_dots,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 
+found_quarters=remove_inner_boxes(found_barred_eigths,found_quarters)
 found_quarters=remove_inner_boxes(found_eigths,found_quarters)
 found_quarters=remove_inner_boxes(found_wholes,found_quarters)
 found_halfs=remove_inner_boxes(found_eigths,found_halfs)
@@ -317,6 +320,7 @@ draw_rect(found_sharps,staffless_color,(0,255,0))
 draw_rect(found_wholes,staffless_color,(255,255,0))
 draw_rect(found_dots,staffless_color,(0,125,255))
 draw_rect(found_eigths,staffless_color,(255,0,255))
+draw_rect(found_barred_eigths,staffless_color,(255,0,255))
 
 # We create a note object, and then we find on which staff it is
 def sort_in_staff(staff_notes, staves, found, duration, type):
@@ -324,11 +328,17 @@ def sort_in_staff(staff_notes, staves, found, duration, type):
         x,y,w,h = p
         cx = x + w // 2 # getting the centerpoint of the notehead
         cy = y + h // 2
+        if type=="barred_eigth":
+                note1= Note (0, duration, cx, cy+10,"eigth")
+                note2= Note (0, duration, cx+10, cy,"eigth")
         note = Note (0, duration, cx, cy,type)
         for i in range (len(staves)):
             ys = sorted(staves[i])
             if ys[0] - 50 < cy < ys[-1] + 50:
                 staff_notes[i].append(note)
+                if type=="barred_eigth":
+                    staff_notes[i].append(note1)
+                    staff_notes[i].append(note2)
                 break
     return staff_notes
 
@@ -347,6 +357,7 @@ staff_notes=sort_in_staff(staff_notes,staves,found_halfs,0.5,"half")
 staff_notes=sort_in_staff(staff_notes,staves,found_wholes,1,"whole")
 staff_notes=sort_in_staff(staff_notes,staves,found_dots,0,"dot")
 staff_notes=sort_in_staff(staff_notes,staves,found_eigths,0.125,"eigth")
+# staff_notes=sort_in_staff(staff_notes,staves,found_barred_eigths,0.125,"barred_eigths")
 
 #staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps") 
 # i commented sharps out just bc they're not "notes" per se but idk what you want to do with those
@@ -445,7 +456,14 @@ for i in range (len(bass_notes)):
         if i!=len(bass_notes) -1 and bass_notes[i+1].type=="dot":
             note.duration*=1.5
         MyMIDI.addNote(track=1, channel=0, pitch=note.pitch, time=time, duration=note.duration, volume=100)
-        time=time+note.duration
+        if i<len(bass_notes)-1:
+            if note.x!=bass_notes[i+1].x:
+                print(str(note.x) + " , " + str(bass_notes[i+1].x))
+                time=time+note.duration
+            else:
+               print("homo")
+        else:
+                time=time+note.duration
 
 with open("output.mid", "wb") as output_file:
     MyMIDI.writeFile(output_file)
