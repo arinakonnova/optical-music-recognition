@@ -186,8 +186,8 @@ whole_template = resize(cv2.imread("./ressource/templates/whole-note.png", cv2.I
 half_template = resize(cv2.imread("./ressource/templates/half-note-space.png", cv2.IMREAD_GRAYSCALE),15)
 #quarter_template = cv2.imread("./ressource/templates/quarter.png", cv2.IMREAD_GRAYSCALE)
 quarter_template = resize(cv2.imread("./ressource/templates/quarter-note-line.png", cv2.IMREAD_GRAYSCALE),15)
-#eighth_up_template = cv2.imread("./ressource/templates/eighth-note-line.png", cv2.IMREAD_GRAYSCALE)
-#eighth_down_template = cv2.imread("./ressource/templates/eighth-note-space.png", cv2.IMREAD_GRAYSCALE)
+eighth_up_template =resize(cv2.imread("./ressource/templates/eighth-note-line.png", cv2.IMREAD_GRAYSCALE),75)
+#eighth_down_template =resize( cv2.imread("./ressource/templates/eighth-note-space.png", cv2.IMREAD_GRAYSCALE),50)
 #sharp_template = cv2.imread("./ressource/templates/sharp.png", cv2.IMREAD_GRAYSCALE)
 sharp_template = resize(cv2.imread("./ressource/templates/sharp-space.png", cv2.IMREAD_GRAYSCALE),50)
 #flat_template = cv2.imread("./ressource/templates/flat-space.png", cv2.IMREAD_GRAYSCALE)
@@ -280,6 +280,7 @@ found_quarters= findSymbol(staffless_img,quarter_template, 0.55)
 found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
 found_wholes= findSymbol(staffless_img,whole_template, 0.535)
 found_dots= findSymbol(staffless_img,dot_template, 0.70)
+found_eigths= findSymbol(staffless_img,eighth_up_template, 0.47)
 
 # deleting everything that's not in the staves (ie text)
 found_treble_clefs=delete_out_of_staff(found_treble_clefs,staves)
@@ -289,13 +290,16 @@ found_quarters= delete_out_of_staff(found_quarters,staves)
 found_sharps= delete_out_of_staff(found_sharps,staves)
 found_wholes=delete_out_of_staff(found_wholes,staves)
 found_dots= delete_out_of_staff(found_dots,staves)
+found_eigths= delete_out_of_staff(found_eigths,staves)
 
 found_quarters = delete_left(found_quarters,found_treble_clefs[0][0]+found_treble_clefs[0][2]) #temporary solution
 found_halfs = delete_left(found_halfs,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 found_wholes= delete_left(found_wholes,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 found_dots=delete_left(found_dots,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 
+found_quarters=remove_inner_boxes(found_eigths,found_quarters)
 found_quarters=remove_inner_boxes(found_wholes,found_quarters)
+found_halfs=remove_inner_boxes(found_eigths,found_halfs)
 found_halfs=remove_inner_boxes(found_wholes,found_halfs)
 found_dots=remove_inner_boxes(found_halfs,found_dots)
 found_dots=remove_inner_boxes(found_quarters,found_dots)
@@ -311,6 +315,7 @@ draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_sharps,staffless_color,(0,255,0))
 draw_rect(found_wholes,staffless_color,(255,255,0))
 draw_rect(found_dots,staffless_color,(0,125,255))
+draw_rect(found_eigths,staffless_color,(255,0,255))
 
 # We create a note object, and then we find on which staff it is
 def sort_in_staff(staff_notes, staves, found, duration, type):
@@ -340,14 +345,15 @@ staff_notes=sort_in_staff(staff_notes,staves,found_quarters,0.25,"quarter")
 staff_notes=sort_in_staff(staff_notes,staves,found_halfs,0.5,"half")
 staff_notes=sort_in_staff(staff_notes,staves,found_wholes,1,"whole")
 staff_notes=sort_in_staff(staff_notes,staves,found_dots,0,"dot")
+staff_notes=sort_in_staff(staff_notes,staves,found_eigths,0.125,"eigth")
 
 #staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharps") 
 # i commented sharps out just bc they're not "notes" per se but idk what you want to do with those
 
 # We loop through each staff and assign a pitch 
 # treble clef: space above top line -> space below bottom line
-treble_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4"]
-treble_vals = [ 79 , 77 , 76 , 74 , 72 , 71 , 69 , 67 , 65 , 64 , 62 ]
+treble_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4","C4"]
+treble_vals = [ 79 , 77 , 76 , 74 , 72 , 71 , 69 , 67 , 65 , 64 , 62, 60 ]
 
 bass_vals = [59 , 57 , 55 , 53 , 52 , 50 , 48 , 47, 45 , 43]
 
@@ -360,10 +366,14 @@ for si, staff in enumerate(staff_notes):
     positions = staff_info[si]["pitch_positions"]
     for note in staff:
         if note.type!="clef":
+            #print(positions[1]-positions[0])
             cy = note.y 
             # find nearest staff line/space position
             diffs = [abs(cy - pos) for pos in positions]
             idx = diffs.index(min(diffs))
+            print(positions[-1])
+            if positions[-1]-7<cy:
+                idx+=1
             if not note_start:
                 match note.type:
                     case "sharp":
@@ -376,9 +386,14 @@ for si, staff in enumerate(staff_notes):
                             pitch_vals[idx+7]-=1
                     case _:
                         note_start = True
+                        if note.type=="eigth":
+                            idx+=3
                         note.pitch = pitch_vals[idx]                
             else:
+                if note.type=="eigth":
+                            idx+=3
                 note.pitch = pitch_vals[idx]
+
 
 #finally, we sort them from left to right in the array so they're in order
 for staff in staff_notes:
@@ -437,6 +452,7 @@ with open("output.mid", "wb") as output_file:
 #cv2.imshow("Matchtemplate", resize(result))
 cv2.imshow("Everything (staffless)", resize(staffless_color,600))
 cv2.imwrite("symbols.png", staffless_color)
+
 
 # resizing
 
