@@ -3,6 +3,15 @@ import cv2
 import numpy as np
 from midiutil import MIDIFile
 
+
+
+# resizing function (to be used for displaying images only)
+def resize(img, scale): 
+    h, w = img.shape[:2]
+    coeff = scale / h
+    img = cv2.resize(img, (int(w * coeff), int(h * coeff)))
+    return img 
+
 class Note:
     def __init__(self,pitch,duration,x,y,type):
         self.type=type
@@ -13,20 +22,16 @@ class Note:
 
 # importing sheet file
 img_file = sys.argv[1]
-img = cv2.imread(img_file)
-#cv2.imshow("aaa", img)
+img = resize(cv2.imread(img_file),1600)
+cv2.imshow("aaa", img)
 
-# resizing function (to be used for displaying images only)
-def resize(img, scale): 
-    h, w = img.shape[:2]
-    coeff = scale / h
-    img = cv2.resize(img, (int(w * coeff), int(h * coeff)))
-    return img 
 
 
 # STEP 1: Finding all the staff lines through edge detection 
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 edges = cv2.Canny(gray, 50, 150)
+cv2.imshow("canny", resize(edges,700))
+
 # making a horizontal structuring element (w:50px, h:1px)
 kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (50, 1))
 horizontal = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
@@ -107,15 +112,15 @@ for staff_index, staff in enumerate(staves):
         ],
         "pitch_positions": pitch_positions
     })
-#for staff in staves: 
-#    ys = sorted(staff)
-#    top = ys[0] - 10 # padding above the first line
-#    bottom = ys[-1] + 10 # padding below the last line
-#    # staff spans the full width of the image 
-#    x1 = 0
-#    x2 = img.shape[1]
-#    # drawing the actual box 
-#    cv2.rectangle(img, (x1, top), (x2, bottom), (0, 0, 255), 2)
+for staff in staves: 
+   ys = sorted(staff)
+   top = ys[0] - 10 # padding above the first line
+   bottom = ys[-1] + 10 # padding below the last line
+   # staff spans the full width of the image 
+   x1 = 0
+   x2 = img.shape[1]
+   # drawing the actual box 
+   cv2.rectangle(img, (x1, top), (x2, bottom), (0, 0, 255), 2)
 
 # saving the image with the staves highlighted 
 cv2.imwrite("staves_detected.png", img)
@@ -172,25 +177,25 @@ for contour in contours:
 # STEP 3: Template matching
 # importing templates
 
-#clef_template = cv2.imread("./ressource/clef.png", cv2.IMREAD_GRAYSCALE)
-treble_clef_template = resize(cv2.imread("./ressource/treble-clef.png", cv2.IMREAD_GRAYSCALE),100)
-bass_clef_template = resize(cv2.imread("./ressource/bass-clef.png", cv2.IMREAD_GRAYSCALE),100)
-#wholespace_template = cv2.imread("./ressource/whole-space.png", cv2.IMREAD_GRAYSCALE)
-whole_template = resize(cv2.imread("./ressource/whole-note.png", cv2.IMREAD_GRAYSCALE),15)
-# half_template = cv2.imread("./ressource/half.png", cv2.IMREAD_GRAYSCALE)
-half_template = resize(cv2.imread("./ressource/half-note-space.png", cv2.IMREAD_GRAYSCALE),15)
-#quarter_template = cv2.imread("./ressource/quarter.png", cv2.IMREAD_GRAYSCALE)
-quarter_template = resize(cv2.imread("./ressource/quarter-note-line.png", cv2.IMREAD_GRAYSCALE),15)
-#eighth_up_template = cv2.imread("./ressource/eighth-note-line.png", cv2.IMREAD_GRAYSCALE)
-#eighth_down_template = cv2.imread("./ressource/eighth-note-space.png", cv2.IMREAD_GRAYSCALE)
-#sharp_template = cv2.imread("./ressource/sharp.png", cv2.IMREAD_GRAYSCALE)
-sharp_template = resize(cv2.imread("./ressource/sharp-space.png", cv2.IMREAD_GRAYSCALE),50)
-#flat_template = cv2.imread("./ressource/flat-space.png", cv2.IMREAD_GRAYSCALE)
-#whole_rest_template = cv2.imread("./ressource/whole-rest.png", cv2.IMREAD_GRAYSCALE)
-#half_rest_template = cv2.imread("./ressource/half-rest.png", cv2.IMREAD_GRAYSCALE)
-#quarter_rest_template = cv2.imread("./ressource/quarter-rest.png", cv2.IMREAD_GRAYSCALE)
-#eighth_rest_template = cv2.imread("./ressource/eighth-rest.png", cv2.IMREAD_GRAYSCALE)
-dot_template = resize(cv2.imread("./ressource/dot.png", cv2.IMREAD_GRAYSCALE),20)
+#clef_template = cv2.imread("./ressource/templates/clef.png", cv2.IMREAD_GRAYSCALE)
+treble_clef_template = resize(cv2.imread("./ressource/templates/treble-clef.png", cv2.IMREAD_GRAYSCALE),100)
+bass_clef_template = resize(cv2.imread("./ressource/templates/bass-clef.png", cv2.IMREAD_GRAYSCALE),75)
+#wholespace_template = cv2.imread("./ressource/templates/whole-space.png", cv2.IMREAD_GRAYSCALE)
+whole_template = resize(cv2.imread("./ressource/templates/whole-note.png", cv2.IMREAD_GRAYSCALE),15)
+# half_template = cv2.imread("./ressource/templates/half.png", cv2.IMREAD_GRAYSCALE)
+half_template = resize(cv2.imread("./ressource/templates/half-note-space.png", cv2.IMREAD_GRAYSCALE),15)
+#quarter_template = cv2.imread("./ressource/templates/quarter.png", cv2.IMREAD_GRAYSCALE)
+quarter_template = resize(cv2.imread("./ressource/templates/quarter-note-line.png", cv2.IMREAD_GRAYSCALE),15)
+#eighth_up_template = cv2.imread("./ressource/templates/eighth-note-line.png", cv2.IMREAD_GRAYSCALE)
+#eighth_down_template = cv2.imread("./ressource/templates/eighth-note-space.png", cv2.IMREAD_GRAYSCALE)
+#sharp_template = cv2.imread("./ressource/templates/sharp.png", cv2.IMREAD_GRAYSCALE)
+sharp_template = resize(cv2.imread("./ressource/templates/sharp-space.png", cv2.IMREAD_GRAYSCALE),50)
+#flat_template = cv2.imread("./ressource/templates/flat-space.png", cv2.IMREAD_GRAYSCALE)
+#whole_rest_template = cv2.imread("./ressource/templates/whole-rest.png", cv2.IMREAD_GRAYSCALE)
+#half_rest_template = cv2.imread("./ressource/templates/half-rest.png", cv2.IMREAD_GRAYSCALE)
+#quarter_rest_template = cv2.imread("./ressource/templates/quarter-rest.png", cv2.IMREAD_GRAYSCALE)
+#eighth_rest_template = cv2.imread("./ressource/templates/eighth-rest.png", cv2.IMREAD_GRAYSCALE)
+dot_template = resize(cv2.imread("./ressource/templates/dot.png", cv2.IMREAD_GRAYSCALE),20)
 #cv2.imshow("template", template)
 
 # Find locations above threshold
@@ -211,7 +216,7 @@ def findSymbol(img,template,threshold):
     for pt in zip(*locations[::-1]):
         rectangles.append([pt[0], pt[1], w, h])
     # grouping overlapping rectangles  
-    rectangles, _ = cv2.groupRectangles(rectangles, groupThreshold=1, eps=0.5)
+    rectangles, _ = cv2.groupRectangles(rectangles, groupThreshold=5, eps=0.6)
     
     return rectangles
 
@@ -251,54 +256,55 @@ def delete_out_of_staff(rectangles, staves):
         found = False
         for staff in staves:
             ys = sorted(staff)
-            if ys[0] - 50 < p[1] < ys[-1] + 50:
+            if ys[0] - 50 < p[1] < ys[-1] + 25:
                 found = True
                 break
         if found:
             filtered.append(p)
     return filtered
 
-def delete_left(rectangles):
+def delete_left(rectangles,left):
     filtered = []
     for p in rectangles:
-            if 150  < p[0]:
+            if left  < p[0]:
                 filtered.append(p)
     return filtered
 
-# def delete_symbol_overlap(r1,r2):
-#     for p1 in r1:
-#         for p2 in r2:
-#             if p2[0]
 
 # making colored version of img so rectangles show up
 staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
-found_clefs= findSymbol(staffless_img,treble_clef_template, 0.3) # should we do the same for the bass clef?
+found_treble_clefs= findSymbol(staffless_img,treble_clef_template, 0.3) 
+found_bass_clefs= findSymbol(staffless_img,bass_clef_template, 0.35)
 found_halfs= findSymbol(staffless_img,half_template, 0.45)
-found_quarters= findSymbol(staffless_img,quarter_template, 0.45)
+found_quarters= findSymbol(staffless_img,quarter_template, 0.55)
 found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
-found_wholes= findSymbol(staffless_img,whole_template, 0.45)
-found_dots= findSymbol(staffless_img,dot_template, 0.50)
+found_wholes= findSymbol(staffless_img,whole_template, 0.535)
+found_dots= findSymbol(staffless_img,dot_template, 0.70)
 
 # deleting everything that's not in the staves (ie text)
-found_clefs=delete_out_of_staff(found_clefs,staves)
+found_treble_clefs=delete_out_of_staff(found_treble_clefs,staves)
+found_bass_clefs=delete_out_of_staff(found_bass_clefs,staves)
 found_halfs=delete_out_of_staff(found_halfs,staves)
 found_quarters= delete_out_of_staff(found_quarters,staves)
 found_sharps= delete_out_of_staff(found_sharps,staves)
 found_wholes=delete_out_of_staff(found_wholes,staves)
 found_dots= delete_out_of_staff(found_dots,staves)
 
-found_quarters = delete_left(found_quarters) #temporary solution
-found_halfs = delete_left(found_halfs)
-found_wholes= delete_left(found_wholes)
-found_dots=delete_left(found_dots)
+found_quarters = delete_left(found_quarters,found_treble_clefs[0][0]+found_treble_clefs[0][2]) #temporary solution
+found_halfs = delete_left(found_halfs,found_treble_clefs[0][0]+found_treble_clefs[0][2])
+found_wholes= delete_left(found_wholes,found_treble_clefs[0][0]+found_treble_clefs[0][2])
+found_dots=delete_left(found_dots,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 
+found_quarters=remove_inner_boxes(found_wholes,found_quarters)
+found_halfs=remove_inner_boxes(found_wholes,found_halfs)
 found_dots=remove_inner_boxes(found_halfs,found_dots)
 found_dots=remove_inner_boxes(found_quarters,found_dots)
 found_dots=remove_inner_boxes(found_wholes,found_dots)
 
 
 
-draw_rect(found_clefs,staffless_color,(0,0,0))
+draw_rect(found_treble_clefs,staffless_color,(0,0,0))
+draw_rect(found_bass_clefs,staffless_color,(0,0,0))
 draw_rect(found_halfs,staffless_color,(255,0,0))
 draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_quarters,staffless_color,(0,0,255))
@@ -321,12 +327,13 @@ def sort_in_staff(staff_notes, staves, found, duration, type):
     return staff_notes
 
 #We create an object where all our notes we be organized by staves
-staff_notes = np.array([0,0,0,0], dtype=object)
-for i in range(len(staff_notes)):
-    staff_notes[i] = []
+staff_notes = []
+for i in range(len(staves)):
+    staff_notes.append([])
 
 #We call sort_in_staff for every type of note, giving them a duration and a type name (for readability)
-staff_notes=sort_in_staff(staff_notes,staves,found_clefs,0,"clef")
+staff_notes=sort_in_staff(staff_notes,staves,found_treble_clefs,0,"treble_clef")
+staff_notes=sort_in_staff(staff_notes,staves,found_bass_clefs,0,"bass_clef")
 staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharp")
 
 staff_notes=sort_in_staff(staff_notes,staves,found_quarters,0.25,"quarter")
@@ -339,11 +346,17 @@ staff_notes=sort_in_staff(staff_notes,staves,found_dots,0,"dot")
 
 # We loop through each staff and assign a pitch 
 # treble clef: space above top line -> space below bottom line
-pitch_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4"]
-pitch_vals = [ 79 , 77 , 76 , 74 , 72 , 71 , 69 , 67 , 65 , 64 , 62 ]
+treble_names = ["G5","F5","E5","D5","C5","B4","A4","G4","F4","E4","D4"]
+treble_vals = [ 79 , 77 , 76 , 74 , 72 , 71 , 69 , 67 , 65 , 64 , 62 ]
+
+bass_vals = [59 , 57 , 55 , 53 , 52 , 50 , 48 , 47, 45 , 43]
 
 note_start= False
 for si, staff in enumerate(staff_notes):
+    if staff[0].type=="bass_clef":
+        pitch_vals=bass_vals
+    else:
+        pitch_vals=treble_vals
     positions = staff_info[si]["pitch_positions"]
     for note in staff:
         if note.type!="clef":
@@ -379,24 +392,39 @@ for i in range(len(staff_notes)):
 
 
 # fusing everything into a single array of """notes"""
-all_notes = []
+treble_notes = []
+bass_notes = []
 for i in staff_notes:
-    for j in i:
-        all_notes.append(j)
+    if i[0].type=="treble_clef":
+        for j in i:
+            treble_notes.append(j)
+    else:
+        for j in i:
+            bass_notes.append(j)
 
 
-MyMIDI = MIDIFile(1)  # One track, defaults to format 1 (tempo track is created
+MyMIDI = MIDIFile(numTracks=2)  # One track, defaults to format 1 (tempo track is created
                       # automatically)
 MyMIDI.addTempo(0, 0, tempo=60)
 
 time=0
 #for i,note in enumerate(all_notes):
-for i in range (len(all_notes)):
-    note=all_notes[i]
+for i in range (len(treble_notes)):
+    note=treble_notes[i]
     if note.duration!=0:
-        if i!=len(all_notes) -1 and all_notes[i+1].type=="dot":
+        if i!=len(treble_notes) -1 and treble_notes[i+1].type=="dot":
             note.duration*=1.5
         MyMIDI.addNote(track=0, channel=0, pitch=note.pitch, time=time, duration=note.duration, volume=100)
+        time=time+note.duration
+
+time=0
+#for i,note in enumerate(all_notes):
+for i in range (len(bass_notes)):
+    note=bass_notes[i]
+    if note.duration!=0:
+        if i!=len(bass_notes) -1 and bass_notes[i+1].type=="dot":
+            note.duration*=1.5
+        MyMIDI.addNote(track=1, channel=0, pitch=note.pitch, time=time, duration=note.duration, volume=100)
         time=time+note.duration
 
 with open("output.mid", "wb") as output_file:
