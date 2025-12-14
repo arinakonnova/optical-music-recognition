@@ -301,7 +301,7 @@ found_wholes= delete_left(found_wholes,found_treble_clefs[0][0]+found_treble_cle
 found_dots=delete_left(found_dots,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 
 #found_quarters=remove_inner_boxes(found_barred_eigths,found_quarters)
-#found_quarters=remove_inner_boxes(found_eigths,found_quarters)
+found_quarters=remove_inner_boxes(found_eigths,found_quarters)
 found_quarters=remove_inner_boxes(found_wholes,found_quarters)
 found_halfs=remove_inner_boxes(found_eigths,found_halfs)
 found_halfs=remove_inner_boxes(found_wholes,found_halfs)
