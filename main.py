@@ -138,41 +138,41 @@ staffless_img = cv2.imread("staffless.png", cv2.IMREAD_GRAYSCALE)
 cv2.imshow("Staff Removed", resize(staffless_img,600))
 
 # STEP 2: Finding potential musical symbols 
-binary = cv2.adaptiveThreshold(staffless_img, 255, 
-                               cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                               cv2.THRESH_BINARY_INV, 
-                               35, # block size
-                               11) # constant subtracted from mean
+#binary = cv2.adaptiveThreshold(staffless_img, 255, 
+#                               cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+#                               cv2.THRESH_BINARY_INV, 
+#                               35, # block size
+#                               11) # constant subtracted from mean
 #cv2.imshow("Binary", resize(binary),600)
-cv2.imwrite("binary.png", binary)
+#cv2.imwrite("binary.png", binary)
 
-contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-symbols = []
-staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
+#contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#symbols = []
+#staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
 
 # computing average spacing from detected staves
-avg_spacing = np.mean([abs(staff[i+1] - staff[i]) for staff in staves for i in range(4)])
-top_of_first_staff = min(staff[0] for staff in staves)
+#avg_spacing = np.mean([abs(staff[i+1] - staff[i]) for staff in staves for i in range(4)])
+#top_of_first_staff = min(staff[0] for staff in staves)
 
 # filtering contours 
-for contour in contours:
-    area = cv2.contourArea(contour)
-    if area < 20 or area > 15000:
-        continue 
-    x,y,w,h = cv2.boundingRect(contour)
-    ratio = w / h
-    if ratio < 0.15 or ratio > 4:
-        continue
-    if h < 0.5 * avg_spacing or h > 3.5 * avg_spacing:
-        continue
-    if y + h < top_of_first_staff - 10:
-        continue
-    # passed all the filters -> actual musical symbol candidate 
-    crop = staffless_img[y:y+h, x:x+w]
-    cx, cy = x + w//2, y+ h//2 
-    symbols.append({"bbox": (x,y,w,h), "center": (cx,cy), "image": crop})
-    cv2.rectangle(staffless_color, (x,y), (x+w, y+h), (0,0,255), 2)
-#cv2.imshow("Candidates", resize(staffless_color),600)
+#for contour in contours:
+#    area = cv2.contourArea(contour)
+#    if area < 20 or area > 15000:
+#        continue 
+#    x,y,w,h = cv2.boundingRect(contour)
+#    ratio = w / h
+#    if ratio < 0.15 or ratio > 4:
+#        continue
+#    if h < 0.5 * avg_spacing or h > 3.5 * avg_spacing:
+#        continue
+#    if y + h < top_of_first_staff - 10:
+#        continue
+#    # passed all the filters -> actual musical symbol candidate 
+#    crop = staffless_img[y:y+h, x:x+w]
+#    cx, cy = x + w//2, y+ h//2 
+#    symbols.append({"bbox": (x,y,w,h), "center": (cx,cy), "image": crop})
+#    cv2.rectangle(staffless_color, (x,y), (x+w, y+h), (0,0,255), 2)
+#cv2.imshow("Candidates", resize(staffless_color,600))
 
 # STEP 3: Template matching
 # importing templates
