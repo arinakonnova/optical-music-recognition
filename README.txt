@@ -15,6 +15,8 @@ not rely on any neural networks or other machine learning techniques,
 using only traditional computer vision methods. The system primarily
 works through template matching using OpenCV's matchTemplate function. 
 
+Our system uses the following modules and libraries: sys, cv2, numpy, 
+and midiutil. These should be installed before running the project.
 To run a piece of sheet music through our system, the terminal command
 from the optical-music-recognition directory is: 
 % python file/path/to/omr/directory/main.py ressource/sheet/file-name.png 
