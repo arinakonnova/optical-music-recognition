@@ -154,8 +154,8 @@ def print_staff(staff_notes):
 
 # importing sheet given in argument
 img_file = sys.argv[1]
-img = resize(cv2.imread(img_file),1600)
-cv2.imshow("aaa", img)
+img = resize(cv2.imread(img_file),600)
+cv2.imshow("Original Sheet Music", img)
 
 # ===================================================================================================================
 # STEP 1: Finding all the staff lines through edge detection
