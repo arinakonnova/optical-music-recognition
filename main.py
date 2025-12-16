@@ -52,14 +52,15 @@ if lines is not None:
         # keeping only ~almost~ horizontal lines
         if abs(y1 - y2) < 3: # small tolerance for tilt
             staff_lines.append((x1, y1, x2, y2))
-            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
 staff_y_positions = sorted([y1 for (x1, y1, x2, y2) in staff_lines]) # will help in finding pitch
 
 # getting rid of potential line duplicates & merging lines within 4px
 unique_ys = []
 for y in sorted([y1 for (_,y1,_,_) in staff_lines]):
-    if not unique_ys or abs(y - unique_ys[-1]) > 4:
+    if not unique_ys or abs(y - unique_ys[-1]) > 10:
         unique_ys.append(y)
+    cv2.line(img, (0, y), (3000, y), (0, 255, 0), 2)
+
 
 # grouping individual staff lines into 5-line staves
 ys = unique_ys
@@ -184,6 +185,7 @@ bass_clef_template = resize(cv2.imread("./ressource/templates/bass-clef.png", cv
 whole_template = resize(cv2.imread("./ressource/templates/whole-note.png", cv2.IMREAD_GRAYSCALE),15)
 # half_template = cv2.imread("./ressource/templates/half.png", cv2.IMREAD_GRAYSCALE)
 half_template = resize(cv2.imread("./ressource/templates/half-note-space.png", cv2.IMREAD_GRAYSCALE),15)
+half_line_template = resize(cv2.imread("./ressource/templates/half-note-line.png", cv2.IMREAD_GRAYSCALE),15)
 #quarter_template = cv2.imread("./ressource/templates/quarter.png", cv2.IMREAD_GRAYSCALE)
 quarter_template = resize(cv2.imread("./ressource/templates/quarter-note-line.png", cv2.IMREAD_GRAYSCALE),15)
 eighth_up_template =resize(cv2.imread("./ressource/templates/eighth-note-line.png", cv2.IMREAD_GRAYSCALE),75)
@@ -196,7 +198,7 @@ whole_rest_template = resize(cv2.imread("./ressource/templates/whole-rest.png", 
 half_rest_template = resize(cv2.imread("./ressource/templates/half-rest.png", cv2.IMREAD_GRAYSCALE), 15)
 quarter_rest_template = resize(cv2.imread("./ressource/templates/quarter-rest.png", cv2.IMREAD_GRAYSCALE), 15)
 eighth_rest_template = resize(cv2.imread("./ressource/templates/eighth-rest.png", cv2.IMREAD_GRAYSCALE), 15)
-dot_template = resize(cv2.imread("./ressource/templates/dot.png", cv2.IMREAD_GRAYSCALE),20)
+dot_template = resize(cv2.imread("./ressource/templates/dot.png", cv2.IMREAD_GRAYSCALE),15)
 #cv2.imshow("template", template)
 
 # Find locations above threshold
@@ -277,11 +279,12 @@ staffless_color = cv2.cvtColor(staffless_img, cv2.COLOR_GRAY2BGR)
 found_treble_clefs= findSymbol(staffless_img,treble_clef_template, 0.3) 
 found_bass_clefs= findSymbol(staffless_img,bass_clef_template, 0.35)
 found_halfs= findSymbol(staffless_img,half_template, 0.45)
+found_halfs_line= findSymbol(staffless_img,half_line_template, 0.35)
 found_quarters= findSymbol(staffless_img,quarter_template, 0.55)
-found_sharps= findSymbol(staffless_img,sharp_template, 0.55)
+found_sharps= findSymbol(staffless_img,sharp_template, 0.50)
 found_wholes= findSymbol(staffless_img,whole_template, 0.535)
-found_dots= findSymbol(staffless_img,dot_template, 0.70)
-found_eigths= findSymbol(staffless_img,eighth_up_template, 0.47)
+found_dots= findSymbol(staffless_img,dot_template, 0.68)
+found_eigths= findSymbol(staffless_img,eighth_up_template, 0.48)
 #found_barred_eigths= findSymbol(staffless_img,barred_eighth_template, 0.2)
 
 
@@ -289,6 +292,7 @@ found_eigths= findSymbol(staffless_img,eighth_up_template, 0.47)
 found_treble_clefs=delete_out_of_staff(found_treble_clefs,staves)
 found_bass_clefs=delete_out_of_staff(found_bass_clefs,staves)
 found_halfs=delete_out_of_staff(found_halfs,staves)
+found_halfs_line=delete_out_of_staff(found_halfs_line,staves)
 found_quarters= delete_out_of_staff(found_quarters,staves)
 found_sharps= delete_out_of_staff(found_sharps,staves)
 found_wholes=delete_out_of_staff(found_wholes,staves)
@@ -298,9 +302,12 @@ found_eigths= delete_out_of_staff(found_eigths,staves)
 found_quarters = delete_left(found_quarters,found_treble_clefs[0][0]+found_treble_clefs[0][2]) #temporary solution
 found_halfs = delete_left(found_halfs,found_treble_clefs[0][0]+found_treble_clefs[0][2])
 found_wholes= delete_left(found_wholes,found_treble_clefs[0][0]+found_treble_clefs[0][2])
-found_dots=delete_left(found_dots,found_treble_clefs[0][0]+found_treble_clefs[0][2])
+found_dots=delete_left(found_dots,found_treble_clefs[0][0]+found_treble_clefs[0][2]+100)
 
 #found_quarters=remove_inner_boxes(found_barred_eigths,found_quarters)
+found_halfs_line=remove_inner_boxes(found_halfs,found_halfs_line)
+found_halfs_line=remove_inner_boxes(found_eigths,found_halfs_line)
+found_halfs_line=remove_inner_boxes(found_quarters,found_halfs_line)
 found_quarters=remove_inner_boxes(found_eigths,found_quarters)
 found_quarters=remove_inner_boxes(found_wholes,found_quarters)
 found_halfs=remove_inner_boxes(found_eigths,found_halfs)
@@ -314,6 +321,7 @@ found_dots=remove_inner_boxes(found_wholes,found_dots)
 draw_rect(found_treble_clefs,staffless_color,(0,0,0))
 draw_rect(found_bass_clefs,staffless_color,(0,0,0))
 draw_rect(found_halfs,staffless_color,(255,0,0))
+draw_rect(found_halfs_line,staffless_color,(255,0,0))
 draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_quarters,staffless_color,(0,0,255))
 draw_rect(found_sharps,staffless_color,(0,255,0))
@@ -354,6 +362,7 @@ staff_notes=sort_in_staff(staff_notes,staves,found_sharps,0,"sharp")
 
 staff_notes=sort_in_staff(staff_notes,staves,found_quarters,0.25,"quarter")
 staff_notes=sort_in_staff(staff_notes,staves,found_halfs,0.5,"half")
+staff_notes=sort_in_staff(staff_notes,staves,found_halfs_line,0.5,"half")
 staff_notes=sort_in_staff(staff_notes,staves,found_wholes,1,"whole")
 staff_notes=sort_in_staff(staff_notes,staves,found_dots,0,"dot")
 staff_notes=sort_in_staff(staff_notes,staves,found_eigths,0.125,"eigth")
@@ -383,7 +392,7 @@ for si, staff in enumerate(staff_notes):
             # find nearest staff line/space position
             diffs = [abs(cy - pos) for pos in positions]
             idx = diffs.index(min(diffs))
-            if positions[-1]-7<cy:
+            if positions[-1]-6<cy:
                 idx+=1
             if not note_start:
                 match note.type:
@@ -410,15 +419,15 @@ for si, staff in enumerate(staff_notes):
 for staff in staff_notes:
     staff.sort(key=lambda note: note.x)
 
-#Print them to double check everything is aok
-for i in range(len(staff_notes)):
-    print("Staff n°" + str(i+1) + ":")
-    #for j in range(len(staff_notes[i])):
-    #    print(staff_notes[i][j].type)
-    for note in staff_notes[i]:
-        # printing note type, pitch, and coordinates (sanity check before converting to MIDI)
-        print(f"{note.type} -> {note.pitch} (x={note.x}, y={note.y})") 
-    print("\n")
+# #Print them to double check everything is aok
+# for i in range(len(staff_notes)):
+#     print("Staff n°" + str(i+1) + ":")
+#     #for j in range(len(staff_notes[i])):
+#     #    print(staff_notes[i][j].type)
+#     for note in staff_notes[i]:
+#         # printing note type, pitch, and coordinates (sanity check before converting to MIDI)
+#         print(f"{note.type} -> {note.pitch} (x={note.x}, y={note.y})") 
+#     print("\n")
 
 
 # fusing everything into a single array of """notes"""
@@ -457,10 +466,7 @@ for i in range (len(bass_notes)):
         MyMIDI.addNote(track=1, channel=0, pitch=note.pitch, time=time, duration=note.duration, volume=100)
         if i<len(bass_notes)-1:
             if note.x!=bass_notes[i+1].x:
-                print(str(note.x) + " , " + str(bass_notes[i+1].x))
                 time=time+note.duration
-            else:
-               print("homo")
         else:
                 time=time+note.duration
 
